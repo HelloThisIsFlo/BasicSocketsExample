@@ -8,7 +8,7 @@ public class ServerMain {
 
         Server server = new Server();
 
-        server.start();
+        server.start(52960);
 
         server.printMessageStdout();
 

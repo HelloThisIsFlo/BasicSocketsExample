@@ -9,13 +9,17 @@ public class Server {
 
     ServerSocket serverSocket;
     Socket socket;
-    Writer out;
+    PrintWriter out;
     BufferedReader in;
 
-    public void start(int port) throws PortTakenException {
-        listen(port);
-        accept();
-        initWriterAndReader();
+    public void start(int port) {
+        try {
+            listen(port);
+            accept();
+            initWriterAndReader();
+        } catch (PortTakenException e) {
+            System.out.println("Port taken: " + port);
+        }
     }
 
     private void listen(int port) throws PortTakenException {
@@ -41,6 +45,7 @@ public class Server {
     private void accept() {
         try {
             socket = serverSocket.accept();
+            System.out.println("Socket opened");
         } catch (IOException e) {
             System.out.println("Accept failed: " + serverSocket.getLocalPort());
             closeConnection();
@@ -65,14 +70,15 @@ public class Server {
     }
     
     public void echoMessage() {
-        // TODO: 11/26/2016 echo message 
     }
     
     public void printMessageStdout() {
         while (true) {
             try {
                 String line = in.readLine();
-                System.out.println(line);
+                if (line != null) {
+                    System.out.println(line);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
