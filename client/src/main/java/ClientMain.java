@@ -1,4 +1,7 @@
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 
 /**
@@ -6,9 +9,9 @@ import java.net.Socket;
  */
 public class ClientMain {
 
-    Socket socket;
-    PrintWriter out;
-    BufferedReader in;
+    private Socket socket;
+    private PrintWriter out;
+    private BufferedReader in;
 
     public static void main(String[] args) {
         new ClientMain().run();
@@ -16,32 +19,42 @@ public class ClientMain {
 
 
     public void run() {
-//        String line = readLineFromStdIn("Please enter text: ");
+        initSocketAndWriterReader("localhost", 1234);
+        initPrintSocketInputWorker();
 
+        readUntilEmptyLine();
 
-        initSocketAndWriterReader("localhost", 52960);
-
-        String line;
-        do {
-            line = readLineFromStdIn("Type a line: ");
-            out.println(line);
-        } while (!line.isEmpty());
-
-        try {
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        closeSocket();
     }
 
-    private String readLineFromStdIn(String prompt) {
-        System.out.println(prompt);
+    private void initPrintSocketInputWorker() {
+        Thread copyInputThread = new Thread(new PrintSocketInputStreamWorker(socket));
+        copyInputThread.start();
+    }
+
+    private void readUntilEmptyLine() {
+        String line;
+        do {
+            line = readLineFromStdIn();
+            out.println(line);
+        } while (!line.isEmpty());
+    }
+
+    private String readLineFromStdIn() {
+        System.out.println("Type a line: ");
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
         try {
             return reader.readLine();
         } catch (IOException e) {
-            return "ERROR";
+            return "";
+        }
+    }
+
+    private void closeSocket() {
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

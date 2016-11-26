@@ -1,4 +1,7 @@
-import java.io.*;
+import clientworker.ClientWorkerFactory;
+import util.Logger;
+
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -6,90 +9,54 @@ import java.net.Socket;
  * @author Kempenich Florian
  */
 public class Server {
+    private static final Logger LOGGER = Logger.getLogger(Server.class);
 
     ServerSocket serverSocket;
-    Socket socket;
-    PrintWriter out;
-    BufferedReader in;
+    ClientWorkerFactory clientWorkerFactory;
 
-    public void start(int port) {
-        try {
-            listen(port);
-            accept();
-            initWriterAndReader();
-        } catch (PortTakenException e) {
-            System.out.println("Port taken: " + port);
-        }
+    public Server(ClientWorkerFactory clientWorkerFactory) {
+        this.clientWorkerFactory = clientWorkerFactory;
     }
 
-    private void listen(int port) throws PortTakenException {
+    public void start(int port) throws PortTakenException {
+        initServer(port);
+        acceptConnections();
+    }
+
+    private void initServer(int port) throws PortTakenException {
         try {
             serverSocket = new ServerSocket(port);
-            System.out.println("Listen on port: " + serverSocket.getLocalPort());
+            LOGGER.info("Listen on port: " + serverSocket.getLocalPort());
         } catch (IOException e) {
             throw new PortTakenException(port);
         }
-
     }
 
-    private void initWriterAndReader() {
+    private void acceptConnections() {
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-    private void accept() {
-        try {
-            socket = serverSocket.accept();
-            System.out.println("Socket opened");
-        } catch (IOException e) {
-            System.out.println("Accept failed: " + serverSocket.getLocalPort());
-            closeConnection();
-        }
-    }
-
-    public void closeConnection() {
-        try {
-            socket.close();
-            serverSocket.close();
-            System.out.println("Closed serverSocket & socket");
-        } catch (IOException e) {
-            e.printStackTrace();
-            // TODO: 11/26/2016 investigate why IOException could happen
-        }
-    }
-
-    public void start() {
-        listen();
-        accept();
-        initWriterAndReader();
-    }
-    
-    public void echoMessage() {
-    }
-    
-    public void printMessageStdout() {
-        while (true) {
-            try {
-                String line = in.readLine();
-                if (line != null) {
-                    System.out.println(line);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            while (true) {
+                Socket socket = serverSocket.accept(); //blocks until new connection
+                handleNewConnection(socket);
             }
+        } catch (IOException e) {
+            LOGGER.error("Accept failed: " + serverSocket.getLocalPort());
+        } finally {
+            tryToCloseServerSocket();
         }
     }
 
-    private void listen() {
+    private void handleNewConnection(Socket socket) {
+        Thread handleConnectionThread = new Thread(clientWorkerFactory.getNewClientWorker(socket));
+        handleConnectionThread.start();
+        LOGGER.info("Connection accepted");
+    }
+
+    private void tryToCloseServerSocket() {
         try {
-            listen(0);
-        } catch (PortTakenException e) {
-            throw new IllegalStateException("No port available on system");
+            serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
+
 }
