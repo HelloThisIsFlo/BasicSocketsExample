@@ -1,5 +1,6 @@
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -8,6 +9,7 @@ import java.net.ServerSocket;
 /**
  * @author Kempenich Florian
  */
+@Ignore
 public class ServerTest {
 
     Server server;
